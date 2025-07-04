@@ -1,0 +1,15 @@
+name: pipeline
+
+on: [push]
+
+jobs:
+  go:
+    uses: pete911/github-actions/.github/workflows/go.yml@main
+  go-release:
+    needs:
+      - go
+    permissions:
+      contents: write
+    uses: pete911/github-actions/.github/workflows/go-releaser.yml@main
+    secrets:
+      PUBLIC_REPO_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}

@@ -30,6 +30,17 @@ not create VPC (IGW and/or NAT gateways), but re-uses existing default VPC.
 
 ## usage
 
+### build/install
+
+You can either build from source, or install. Pick any of the options:
+- build `go build` (or use `Taskfile.yml` - `task` command)
+- [download binary](https://github.com/pete911/aws-vpn/releases)
+- install via brew
+  - add tap `brew tap pete911/tap`
+  - install `brew install aws-vpn`
+
+### run
+
 If you have more than one AWS account, you can use different profile by prefixing commands with `AWS_PROFILE=<profiel> <cmd>`
 - create VPN `aws-vpn create <name>` (name has to be unique per region)
   - you can either select region via `--region` flag, otherwise prompt with select is presented
@@ -39,6 +50,10 @@ If you have more than one AWS account, you can use different profile by prefixin
   - select "upload file" and select file `<region>-aws-vpn-<name>.ovpn` from home directory
   - connect
 - delete VPN `aws-vpn delete` (same as with other commands, region can be provided via `--region` flag)
+ 
+## releases
+
+Releases are published when the new tag is created e.g. `git tag -m "add some feature" v0.0.1 && git push --follow-tags`
 
 ## debug
 

@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/pete911/aws-vpn/internal/cmd/flag"
+	"github.com/pete911/aws-vpn/internal/cmd/prompt"
 	"github.com/pete911/aws-vpn/internal/ip"
 	"github.com/spf13/cobra"
 	"os"
@@ -44,6 +45,10 @@ func runCreate(cmd *cobra.Command, args []string) {
 
 	logger := NewLogger()
 	client := NewClient(logger)
+	if !prompt.Prompt(fmt.Sprintf("create %s VPN in %s region", name, client.Region)) {
+		return
+	}
+
 	instance, err := client.Create(name, createInboundCidrFlag)
 	if err != nil {
 		fmt.Printf("create %s VPN: %v\n", name, err)

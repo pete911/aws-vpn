@@ -63,6 +63,10 @@ func (r Regions) Names() []string {
 	return out
 }
 
+func RegionByCode(code string) Region {
+	return regionsMap[code]
+}
+
 type Region struct {
 	Code      string
 	Name      string

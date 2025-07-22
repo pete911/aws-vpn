@@ -9,7 +9,21 @@ import (
 
 var bold = promptui.Styler(promptui.FGBold)
 
-func Select(label string, items []string) (int, string) {
+func Prompt(label string) bool {
+	prompt := promptui.Prompt{
+		Label:     label,
+		IsConfirm: true,
+	}
+
+	if _, err := prompt.Run(); err != nil {
+		// error is returned if the result is not "y"
+		fmt.Println("operation canceled")
+		return false
+	}
+	return true
+}
+
+func Select(label string, items []string, defaultItem string) (int, string) {
 	if len(items) == 0 {
 		return -1, ""
 	}
@@ -21,10 +35,19 @@ func Select(label string, items []string) (int, string) {
 		return 0, items[0]
 	}
 
+	var cursorPos int
+	for k, v := range items {
+		if v == defaultItem {
+			cursorPos = k
+			break
+		}
+	}
+
 	p := promptui.Select{
-		Label: label,
-		Items: items,
-		Size:  10,
+		Label:     label,
+		Items:     items,
+		CursorPos: cursorPos,
+		Size:      10,
 		Searcher: func(input string, index int) bool {
 			item := items[index]
 			name := strings.Replace(strings.ToLower(item), " ", "", -1)

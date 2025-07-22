@@ -41,13 +41,13 @@ func NewClient(logger *slog.Logger) vpn.Client {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
 
-		regions, err := aws.ListOptedInRegions(ctx, logger)
+		regions, region, err := aws.ListOptedInRegions(ctx, logger)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		i, _ := prompt.Select("region", regions.Names())
+		i, _ := prompt.Select("region", regions.Names(), aws.RegionByCode(region).Name)
 		selectedRegionCode := regions[i].Code
 		flag.Region = selectedRegionCode
 	}
@@ -84,6 +84,6 @@ func SelectInstance(client vpn.Client, instanceName string) aws.Instance {
 		os.Exit(1)
 	}
 
-	i, _ := prompt.Select("instance", instances.Names())
+	i, _ := prompt.Select("instance", instances.Names(), "")
 	return instances[i]
 }

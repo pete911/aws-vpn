@@ -35,7 +35,9 @@ func NewClient(logger *slog.Logger, region string) (Client, error) {
 	if err != nil {
 		return Client{}, err
 	}
-	cfg.Region = region
+	if region != "" {
+		cfg.Region = region
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -267,21 +269,22 @@ func (c Client) createSecurityGroup(ctx context.Context, in MetadataInput, inbou
 	return groupId, nil
 }
 
-func ListOptedInRegions(ctx context.Context, logger *slog.Logger) (Regions, error) {
+// ListOptedInRegions returns list of opted in regions and default region set in AWS config (or empty string)
+func ListOptedInRegions(ctx context.Context, logger *slog.Logger) (Regions, string, error) {
 	logger = logger.With("component", "aws.client")
 	cfg, err := newAWSConfig("")
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	out, err := ec2.NewFromConfig(cfg).DescribeRegions(ctx, &ec2.DescribeRegionsInput{})
 	if err != nil {
-		return nil, errs.FromAwsApi(err, "ec2 describe-regions")
+		return nil, "", errs.FromAwsApi(err, "ec2 describe-regions")
 	}
 
 	regions := toRegions(out.Regions)
-	logger.DebugContext(ctx, fmt.Sprintf("found %d regions", len(regions)))
-	return regions, nil
+	logger.DebugContext(ctx, fmt.Sprintf("found %d regions, default region set to %q", len(regions), cfg.Region))
+	return regions, cfg.Region, nil
 }
 
 func newAWSConfig(profile string) (aws.Config, error) {

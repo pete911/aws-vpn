@@ -62,10 +62,11 @@ Releases are published when the new tag is created e.g. `git tag -m "add some fe
 In case when cleanup/delete fails:
 - check if instance was deleted
 - after the instance is deleted, check and delete security group
-- check and delete (if needed) instance profile (replace `<name>`)
+- check and delete (if needed) instance profile (replace `<name>`) and role
     - `aws iam get-instance-profile --instance-profile-name aws-vpn-<name>`
     - `aws iam remove-role-from-instance-profile --instance-profile-name aws-vpn-<name> --role-name aws-vpn-<name>-<region>`
     - `aws iam delete-instance-profile --instance-profile-name aws-vpn-<name>`
+    - `aws iam delete-role --role-name aws-vpn-<name>-<region>`
 - check and delete secrets (replace `<name>`, and `...` with `client.crt`, `client.key`, `ca.crt` and `ta.key`)
   - `aws secretsmanager delete-secret --secret-id /vpn/aws-vpn-<name>/secrets/... --force-delete-without-recovery`
 

@@ -99,11 +99,12 @@ func (c Client) TerminateInstance(ctx context.Context, in Instance, secretsPath 
 
 	// sometimes it takes longer for ENI to disappear, retry deleting of security group
 	// if this happens, add retry loop
-	for _, groupName := range instance.SecurityGroupNames {
-		if _, err := c.ec2Svc.DeleteSecurityGroup(ctx, &ec2.DeleteSecurityGroupInput{GroupName: aws.String(groupName)}); err != nil {
+	for _, sg := range instance.SecurityGroups {
+		// has to use security group id, name only works in default VPC
+		if _, err := c.ec2Svc.DeleteSecurityGroup(ctx, &ec2.DeleteSecurityGroupInput{GroupId: aws.String(sg.Id)}); err != nil {
 			return errs.FromAwsApi(err, "ec2 delete-security-group")
 		}
-		c.logger.InfoContext(ctx, fmt.Sprintf("deleted %s security group", groupName))
+		c.logger.InfoContext(ctx, fmt.Sprintf("deleted %s %s security group", sg.Name, sg.Id))
 	}
 	return nil
 }

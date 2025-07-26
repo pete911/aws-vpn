@@ -104,20 +104,25 @@ func (i Instances) Names() []string {
 }
 
 type Instance struct {
-	Id                 string
-	Name               string
-	InstanceProfile    string
-	SecurityGroupNames []string
-	PublicDnsName      string
-	PublicIp           string
-	PrivateDnsName     string
-	PrivateIp          string
-	ImageId            string
-	InstanceType       string
-	State              string
-	StateReason        string
-	LaunchTime         time.Time
-	Tags               map[string]string
+	Id              string
+	Name            string
+	InstanceProfile string
+	SecurityGroups  []SecurityGroup
+	PublicDnsName   string
+	PublicIp        string
+	PrivateDnsName  string
+	PrivateIp       string
+	ImageId         string
+	InstanceType    string
+	State           string
+	StateReason     string
+	LaunchTime      time.Time
+	Tags            map[string]string
+}
+
+type SecurityGroup struct {
+	Id   string
+	Name string
 }
 
 func ToInstances(in []types.Instance) []Instance {
@@ -135,9 +140,12 @@ func ToInstance(in types.Instance) Instance {
 			instanceProfile = arnParts[1]
 		}
 	}
-	var securityGroupNames []string
+	var securityGroups []SecurityGroup
 	for _, v := range in.SecurityGroups {
-		securityGroupNames = append(securityGroupNames, aws.ToString(v.GroupName))
+		securityGroups = append(securityGroups, SecurityGroup{
+			Id:   aws.ToString(v.GroupId),
+			Name: aws.ToString(v.GroupName),
+		})
 	}
 	var state, stateReason string
 	if in.State != nil {
@@ -149,20 +157,20 @@ func ToInstance(in types.Instance) Instance {
 	tags := fromTags(in.Tags)
 
 	return Instance{
-		Id:                 aws.ToString(in.InstanceId),
-		Name:               tags["Name"],
-		InstanceProfile:    instanceProfile,
-		SecurityGroupNames: securityGroupNames,
-		PublicDnsName:      aws.ToString(in.PublicDnsName),
-		PublicIp:           aws.ToString(in.PublicIpAddress),
-		PrivateDnsName:     aws.ToString(in.PrivateDnsName),
-		PrivateIp:          aws.ToString(in.PrivateIpAddress),
-		ImageId:            aws.ToString(in.ImageId),
-		InstanceType:       string(in.InstanceType),
-		State:              state,
-		StateReason:        stateReason,
-		LaunchTime:         aws.ToTime(in.LaunchTime),
-		Tags:               tags,
+		Id:              aws.ToString(in.InstanceId),
+		Name:            tags["Name"],
+		InstanceProfile: instanceProfile,
+		SecurityGroups:  securityGroups,
+		PublicDnsName:   aws.ToString(in.PublicDnsName),
+		PublicIp:        aws.ToString(in.PublicIpAddress),
+		PrivateDnsName:  aws.ToString(in.PrivateDnsName),
+		PrivateIp:       aws.ToString(in.PrivateIpAddress),
+		ImageId:         aws.ToString(in.ImageId),
+		InstanceType:    string(in.InstanceType),
+		State:           state,
+		StateReason:     stateReason,
+		LaunchTime:      aws.ToTime(in.LaunchTime),
+		Tags:            tags,
 	}
 }
 

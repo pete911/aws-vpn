@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"time"
+
 	"github.com/pete911/aws-vpn/internal/aws"
 	"github.com/pete911/aws-vpn/internal/aws/iam"
 	"github.com/pete911/aws-vpn/internal/aws/vpc"
 	"github.com/pete911/aws-vpn/internal/vpn/ovpn"
 	"github.com/pete911/aws-vpn/internal/vpn/wg"
-	"log/slog"
-	"time"
 )
 
 const NamePrefix = "aws-vpn-"
@@ -50,25 +51,16 @@ func NewClient(logger *slog.Logger, awsClient aws.Client, product ProductType) C
 	}
 }
 
-func (c Client) Delete(instance aws.Instance) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*300)
-	defer cancel()
-
+func (c Client) Delete(ctx context.Context, instance aws.Instance) error {
 	return c.awsClient.TerminateInstance(ctx, instance, GetSecretsPath(instance.Name))
 }
 
-func (c Client) List() (aws.Instances, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
+func (c Client) List(ctx context.Context) (aws.Instances, error) {
 	// we don't care about name in the tags (it will be stripped anyway), so providing just empty string to get tags
 	return c.awsClient.DescribeInstancesByNamePrefix(ctx, NamePrefix, getMetadataInput("").Tags)
 }
 
-func (c Client) GetClientConfig(instance aws.Instance) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
+func (c Client) GetClientConfig(ctx context.Context, instance aws.Instance) ([]byte, error) {
 	prefix := GetSecretsPath(instance.Name)
 	secrets, err := c.awsClient.GetSecrets(ctx, prefix)
 	if err != nil {
@@ -79,55 +71,58 @@ func (c Client) GetClientConfig(instance aws.Instance) ([]byte, error) {
 	return clientConfig.Parse()
 }
 
-func (c Client) Create(name, inboundCidr string) (aws.Instance, error) {
-	subnet, err := c.getSubnet()
+func (c Client) Create(ctx context.Context, name, inboundCidr string) (aws.Instance, error) {
+	subnet, err := c.getSubnet(ctx)
 	if err != nil {
 		return aws.Instance{}, err
 	}
 	c.logger.Debug(fmt.Sprintf("selected %s %s subnet in %s AZ", subnet.Id, subnet.Name, subnet.AvailabilityZone))
 
-	instance, err := c.runInstance(name, subnet.Id, inboundCidr)
+	instance, err := c.runInstance(ctx, name, subnet.Id, inboundCidr)
 	if err != nil {
 		return aws.Instance{}, err
 	}
 	c.logger.Info(fmt.Sprintf("starting instance %s in subnet %s AZ %s", instance.Id, subnet.Id, subnet.AvailabilityZone))
 	c.logger.Info("waiting 60 seconds for instance to initialize")
-	time.Sleep(60 * time.Second)
+
+	// wait 1 minute for before checking instance status
+	select {
+	case <-ctx.Done():
+		return aws.Instance{}, ctx.Err()
+	case <-time.After(60 * time.Second):
+	}
 
 	// wait for instance to start
 	for x := 0; x < 30; x++ {
-		time.Sleep(15 * time.Second)
-		status, err := c.describeInstanceStatus(instance.Id)
-		if err != nil {
-			return aws.Instance{}, err
-		}
+		select {
+		case <-ctx.Done():
+			return aws.Instance{}, ctx.Err()
+		case <-time.After(15 * time.Second):
+			status, err := c.describeInstanceStatus(ctx, instance.Id)
+			if err != nil {
+				return aws.Instance{}, err
+			}
 
-		c.logger.Info(fmt.Sprintf("instance %s - %s", instance.Id, status))
-		if status.IsReady() {
-			// get fresh initialized instance with public IP and dns set
-			return c.describeInstanceById(instance.Id)
+			c.logger.Info(fmt.Sprintf("instance %s - %s", instance.Id, status))
+			if status.IsReady() {
+				// get fresh initialized instance with public IP and dns set
+				return c.describeInstanceById(ctx, instance.Id)
+			}
+			c.logger.Info("retry in 15 seconds")
 		}
-		c.logger.Info("retry in 15 seconds")
 	}
 	return aws.Instance{}, fmt.Errorf("instance %s not ready", instance.Id)
 }
 
-func (c Client) describeInstanceStatus(id string) (aws.InstanceStatus, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
+func (c Client) describeInstanceStatus(ctx context.Context, id string) (aws.InstanceStatus, error) {
 	return c.awsClient.DescribeInstanceStatus(ctx, id)
 }
 
-func (c Client) describeInstanceById(id string) (aws.Instance, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
+func (c Client) describeInstanceById(ctx context.Context, id string) (aws.Instance, error) {
 	return c.awsClient.DescribeInstanceById(ctx, id)
 }
 
-func (c Client) runInstance(name, subnetId, inboundCidr string) (aws.Instance, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel()
-
+func (c Client) runInstance(ctx context.Context, name, subnetId, inboundCidr string) (aws.Instance, error) {
 	meta := getMetadataInput(name)
 	config := NewConfig(meta.Name, c.awsClient.AccountId, c.awsClient.Region)
 	userData, err := c.userData(config)
@@ -180,10 +175,7 @@ func (c Client) inboundPort() (int, error) {
 	return -1, fmt.Errorf("unknown vpn product type: %d", c.productType)
 }
 
-func (c Client) getSubnet() (vpc.Subnet, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
+func (c Client) getSubnet(ctx context.Context) (vpc.Subnet, error) {
 	subnets, err := c.awsClient.GetDefaultPublicSubnets(ctx)
 	if err != nil {
 		return vpc.Subnet{}, err

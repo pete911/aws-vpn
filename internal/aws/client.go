@@ -4,6 +4,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"log/slog"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -13,9 +17,6 @@ import (
 	"github.com/pete911/aws-vpn/internal/aws/secrets"
 	"github.com/pete911/aws-vpn/internal/aws/vpc"
 	"github.com/pete911/aws-vpn/internal/errs"
-	"log/slog"
-	"strings"
-	"time"
 )
 
 const ssmImageId = "resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"

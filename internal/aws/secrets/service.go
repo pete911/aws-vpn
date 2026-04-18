@@ -3,11 +3,12 @@ package secrets
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"strings"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/pete911/aws-vpn/internal/errs"
-	"log/slog"
-	"strings"
 )
 
 type Service struct {

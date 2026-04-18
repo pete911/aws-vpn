@@ -33,7 +33,7 @@ func NewInlinePolicyInput(name, resource string, actions []string) InlinePolicyI
 }
 
 func newDocument(resource string, actions []string) string {
-	if resource != "" {
+	if resource == "" {
 		resource = "*"
 	}
 	actionsList := "*"

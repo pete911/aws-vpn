@@ -1,10 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/pete911/aws-vpn/internal/cmd/prompt"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var (
@@ -28,12 +31,15 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 	logger := NewLogger()
 	client := NewClient(logger)
-	instance := SelectInstance(client, name)
+	instance := SelectInstance(cmd.Context(), client, name)
 	if !prompt.Prompt(fmt.Sprintf("delete %s VPN instance in %s region", instance, client.Region)) {
 		return
 	}
 
-	if err := client.Delete(instance); err != nil {
+	ctx, cancel := context.WithTimeout(cmd.Context(), time.Second*300)
+	defer cancel()
+
+	if err := client.Delete(ctx, instance); err != nil {
 		fmt.Printf("delete %s VPN: %v\n", instance.Name, err)
 		os.Exit(1)
 	}

@@ -2,8 +2,9 @@ package vpn
 
 import (
 	"fmt"
-	"github.com/pete911/aws-vpn/internal/aws/iam"
 	"strings"
+
+	"github.com/pete911/aws-vpn/internal/aws/iam"
 )
 
 type Config struct {

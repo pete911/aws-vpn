@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/pete911/aws-vpn/internal/cmd"
 	"os"
+
+	"github.com/pete911/aws-vpn/internal/cmd"
 )
 
 var Version = "dev"

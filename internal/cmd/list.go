@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"github.com/pete911/aws-vpn/internal/cmd/out"
-	"github.com/spf13/cobra"
 	"os"
 	"time"
+
+	"github.com/pete911/aws-vpn/internal/cmd/out"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -25,7 +27,10 @@ func runList(cmd *cobra.Command, _ []string) {
 	logger := NewLogger()
 	client := NewClient(logger)
 
-	instances, err := client.List()
+	ctx, cancel := context.WithTimeout(cmd.Context(), time.Second*10)
+	defer cancel()
+
+	instances, err := client.List(ctx)
 	if err != nil {
 		fmt.Printf("list instances: %v\n", err)
 		os.Exit(1)

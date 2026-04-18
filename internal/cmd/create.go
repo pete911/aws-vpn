@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/pete911/aws-vpn/internal/cmd/flag"
 	"github.com/pete911/aws-vpn/internal/cmd/prompt"
 	"github.com/pete911/aws-vpn/internal/ip"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var (
@@ -49,7 +52,10 @@ func runCreate(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	instance, err := client.Create(name, createInboundCidrFlag)
+	ctx, cancel := context.WithTimeout(cmd.Context(), time.Second*600)
+	defer cancel()
+
+	instance, err := client.Create(ctx, name, createInboundCidrFlag)
 	if err != nil {
 		fmt.Printf("create %s VPN: %v\n", name, err)
 		os.Exit(1)

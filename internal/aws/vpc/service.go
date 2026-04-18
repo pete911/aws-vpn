@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/pete911/aws-vpn/internal/errs"
-	"log/slog"
 )
 
 type Service struct {
@@ -52,7 +53,7 @@ func (s Service) GetDefaultPublicSubnets(ctx context.Context) (Subnets, error) {
 
 func (s Service) describeSubnets(ctx context.Context, vpcId string) (Subnets, error) {
 	in := &ec2.DescribeSubnetsInput{
-		Filters: []ec2types.Filter{
+		Filters: []types.Filter{
 			{Name: aws.String("vpc-id"), Values: []string{vpcId}},
 			{Name: aws.String("state"), Values: []string{"available"}},
 		},
@@ -78,7 +79,7 @@ func (s Service) describeSubnets(ctx context.Context, vpcId string) (Subnets, er
 func (s Service) describeRouteTables(ctx context.Context, vpcId string) (RouteTables, error) {
 	in := &ec2.DescribeRouteTablesInput{
 		DryRun: nil,
-		Filters: []ec2types.Filter{
+		Filters: []types.Filter{
 			{Name: aws.String("vpc-id"), Values: []string{vpcId}},
 		},
 	}
@@ -102,7 +103,7 @@ func (s Service) describeRouteTables(ctx context.Context, vpcId string) (RouteTa
 
 func (s Service) getDefaultVpcId(ctx context.Context) (string, error) {
 	in := &ec2.DescribeVpcsInput{
-		Filters: []ec2types.Filter{
+		Filters: []types.Filter{
 			{Name: aws.String("is-default"), Values: []string{"true"}},
 			{Name: aws.String("state"), Values: []string{"available"}},
 		},

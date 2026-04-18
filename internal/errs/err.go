@@ -3,9 +3,10 @@ package errs
 import (
 	"errors"
 	"fmt"
-	"github.com/aws/smithy-go"
 	"net/http"
 	"strings"
+
+	"github.com/aws/smithy-go"
 )
 
 type ApiError struct {

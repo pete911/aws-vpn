@@ -2,11 +2,12 @@ package aws
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/pete911/aws-vpn/internal/aws/iam"
-	"strings"
-	"time"
 )
 
 type MetadataInput struct {

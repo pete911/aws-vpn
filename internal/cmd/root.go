@@ -3,15 +3,16 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/pete911/aws-vpn/internal/aws"
 	"github.com/pete911/aws-vpn/internal/cmd/flag"
 	"github.com/pete911/aws-vpn/internal/cmd/prompt"
 	"github.com/pete911/aws-vpn/internal/vpn"
 	"github.com/spf13/cobra"
-	"log/slog"
-	"os"
-	"strings"
-	"time"
 )
 
 var (
@@ -62,8 +63,11 @@ func NewClient(logger *slog.Logger) vpn.Client {
 }
 
 // SelectInstance either verifies if supplied instance name exists, or prompts user to select instance if argument is empty
-func SelectInstance(client vpn.Client, instanceName string) aws.Instance {
-	instances, err := client.List()
+func SelectInstance(ctx context.Context, client vpn.Client, instanceName string) aws.Instance {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+	defer cancel()
+
+	instances, err := client.List(ctx)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

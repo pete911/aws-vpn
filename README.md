@@ -1,6 +1,6 @@
 # aws-vpn
 
-Currently only OpenVPN is supported. Project creates t3.micro EC2 instance with amazon linux 2023 (x86_64 architecture).
+Currently only OpenVPN is supported. Project creates t3a.nano EC2 instance with amazon linux 2023 (x86_64 architecture).
 [User data](internal/vpn/ovpn/tmpl.go) is executed and VPN is configured. All secrets (certificates and keys) are stored
 in secrets manager. Security groups are configured to allow only users (whoever runs the cli) IP. This can be overridden
 with `--inbound-cidr` flag if needed, when creating VPN.

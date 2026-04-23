@@ -76,7 +76,7 @@ func (c Client) TerminateInstance(ctx context.Context, in Instance, secretsPath 
 	if _, err := c.ec2Svc.TerminateInstances(ctx, &ec2.TerminateInstancesInput{InstanceIds: []string{instance.Id}}); err != nil {
 		return errs.FromAwsApi(err, "ec2 terminate-instance")
 	}
-	c.logger.InfoContext(ctx, fmt.Sprintf("terminating instace %s", instance.Id))
+	c.logger.InfoContext(ctx, fmt.Sprintf("terminating instance %s", instance.Id))
 
 	if err := c.iamSvc.DeleteInstanceProfile(ctx, instance.InstanceProfile); err != nil {
 		return err
@@ -137,7 +137,7 @@ func (c Client) RunInstance(ctx context.Context, v RunInstancesInput) (Instance,
 			Name: aws.String(v.Metadata.Name),
 		},
 		ImageId:          aws.String(ssmImageId),
-		InstanceType:     types.InstanceTypeT3Micro,
+		InstanceType:     types.InstanceTypeT3aNano,
 		SecurityGroupIds: []string{securityGroupId},
 		SubnetId:         aws.String(v.SubnetId),
 		TagSpecifications: []types.TagSpecification{

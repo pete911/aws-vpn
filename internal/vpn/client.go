@@ -56,11 +56,27 @@ func (c Client) Delete(ctx context.Context, instance aws.Instance) error {
 }
 
 func (c Client) Stop(ctx context.Context, instance aws.Instance) error {
-	return c.awsClient.StopInstance(ctx, instance)
+	if err := c.awsClient.StopInstance(ctx, instance); err != nil {
+		return err
+	}
+	if _, err := c.awsClient.WaitForInstanceStatus(ctx, instance, func(status aws.InstanceStatus) bool {
+		return status.InstanceState == "stopped"
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c Client) Start(ctx context.Context, instance aws.Instance) error {
-	return c.awsClient.StartInstance(ctx, instance)
+	if err := c.awsClient.StartInstance(ctx, instance); err != nil {
+		return err
+	}
+	if _, err := c.awsClient.WaitForInstanceStatus(ctx, instance, func(status aws.InstanceStatus) bool {
+		return status.IsReady()
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c Client) List(ctx context.Context, instanceState string) (aws.Instances, error) {
@@ -100,34 +116,9 @@ func (c Client) Create(ctx context.Context, name, inboundCidr string) (aws.Insta
 	case <-time.After(60 * time.Second):
 	}
 
-	// wait for instance to start
-	for x := 0; x < 30; x++ {
-		select {
-		case <-ctx.Done():
-			return aws.Instance{}, ctx.Err()
-		case <-time.After(15 * time.Second):
-			status, err := c.describeInstanceStatus(ctx, instance.Id)
-			if err != nil {
-				return aws.Instance{}, err
-			}
-
-			c.logger.Info(fmt.Sprintf("instance %s - %s", instance.Id, status))
-			if status.IsReady() {
-				// get fresh initialized instance with public IP and dns set
-				return c.describeInstanceById(ctx, instance.Id)
-			}
-			c.logger.Info("retry in 15 seconds")
-		}
-	}
-	return aws.Instance{}, fmt.Errorf("instance %s not ready", instance.Id)
-}
-
-func (c Client) describeInstanceStatus(ctx context.Context, id string) (aws.InstanceStatus, error) {
-	return c.awsClient.DescribeInstanceStatus(ctx, id)
-}
-
-func (c Client) describeInstanceById(ctx context.Context, id string) (aws.Instance, error) {
-	return c.awsClient.DescribeInstanceById(ctx, id)
+	return c.awsClient.WaitForInstanceStatus(ctx, instance, func(status aws.InstanceStatus) bool {
+		return status.IsReady()
+	})
 }
 
 func (c Client) runInstance(ctx context.Context, name, subnetId, inboundCidr string) (aws.Instance, error) {

@@ -86,16 +86,10 @@ func (c Client) TerminateInstance(ctx context.Context, in Instance, secretsPath 
 	}
 
 	// wait for instance to terminate
-	for x := 0; x < 10; x++ {
-		time.Sleep(10 * time.Second)
-		status, err := c.DescribeInstanceStatus(ctx, instance.Id)
-		if err != nil {
-			return err
-		}
-		c.logger.InfoContext(ctx, fmt.Sprintf("instance %s state %s", instance.Id, status.InstanceState))
-		if status.InstanceState == "terminated" {
-			break
-		}
+	if _, err := c.WaitForInstanceStatus(ctx, in, func(status InstanceStatus) bool {
+		return status.InstanceState == "terminated"
+	}); err != nil {
+		return err
 	}
 
 	// sometimes it takes longer for ENI to disappear, retry deleting of security group
@@ -108,6 +102,28 @@ func (c Client) TerminateInstance(ctx context.Context, in Instance, secretsPath 
 		c.logger.InfoContext(ctx, fmt.Sprintf("deleted %s %s security group", sg.Name, sg.Id))
 	}
 	return nil
+}
+
+// WaitForInstanceStatus will keep describing instance (every 15 seconds) until ok function returns true
+func (c Client) WaitForInstanceStatus(ctx context.Context, instance Instance, ok func(status InstanceStatus) bool) (Instance, error) {
+	for x := 0; x < 30; x++ {
+		select {
+		case <-ctx.Done():
+			return Instance{}, ctx.Err()
+		case <-time.After(15 * time.Second):
+			status, err := c.DescribeInstanceStatus(ctx, instance.Id)
+			if err != nil {
+				return Instance{}, err
+			}
+
+			c.logger.InfoContext(ctx, fmt.Sprintf("instance %s - %s", instance.Id, status))
+			if ok(status) {
+				return c.DescribeInstanceById(ctx, instance.Id)
+			}
+			c.logger.InfoContext(ctx, "retry in 15 seconds")
+		}
+	}
+	return Instance{}, fmt.Errorf("failed to wait for %s instance status", instance.Id)
 }
 
 func (c Client) StopInstance(ctx context.Context, in Instance) error {

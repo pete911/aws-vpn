@@ -30,18 +30,19 @@ func runList(cmd *cobra.Command, _ []string) {
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Second*10)
 	defer cancel()
 
-	instances, err := client.List(ctx)
+	instances, err := client.List(ctx, "")
 	if err != nil {
 		fmt.Printf("list instances: %v\n", err)
 		os.Exit(1)
 	}
 
 	table := out.NewTable(logger, os.Stdout)
-	table.AddRow("ID", "NAME", "HOST", "PUBLIC IP", "PRIVATE IP", "TYPE", "LAUNCH TIME")
+	table.AddRow("ID", "NAME", "STATE", "HOST", "PUBLIC IP", "PRIVATE IP", "TYPE", "LAUNCH TIME")
 	for _, instance := range instances {
 		table.AddRow(
 			instance.Id,
 			instance.Name,
+			instance.State,
 			instance.PublicDnsName,
 			instance.PublicIp,
 			instance.PrivateIp,

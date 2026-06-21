@@ -31,7 +31,7 @@ func runConfig(cmd *cobra.Command, args []string) {
 
 	logger := NewLogger()
 	client := NewClient(logger)
-	instance := SelectInstance(cmd.Context(), client, name)
+	instance := SelectInstance(cmd.Context(), client, name, "")
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Second*5)
 	defer cancel()

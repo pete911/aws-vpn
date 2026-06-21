@@ -55,9 +55,17 @@ func (c Client) Delete(ctx context.Context, instance aws.Instance) error {
 	return c.awsClient.TerminateInstance(ctx, instance, GetSecretsPath(instance.Name))
 }
 
-func (c Client) List(ctx context.Context) (aws.Instances, error) {
+func (c Client) Stop(ctx context.Context, instance aws.Instance) error {
+	return c.awsClient.StopInstance(ctx, instance)
+}
+
+func (c Client) Start(ctx context.Context, instance aws.Instance) error {
+	return c.awsClient.StartInstance(ctx, instance)
+}
+
+func (c Client) List(ctx context.Context, instanceState string) (aws.Instances, error) {
 	// we don't care about name in the tags (it will be stripped anyway), so providing just empty string to get tags
-	return c.awsClient.DescribeInstancesByNamePrefix(ctx, NamePrefix, getMetadataInput("").Tags)
+	return c.awsClient.DescribeInstancesByNamePrefix(ctx, NamePrefix, getMetadataInput("").Tags, instanceState)
 }
 
 func (c Client) GetClientConfig(ctx context.Context, instance aws.Instance) ([]byte, error) {

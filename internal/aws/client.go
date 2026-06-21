@@ -110,6 +110,34 @@ func (c Client) TerminateInstance(ctx context.Context, in Instance, secretsPath 
 	return nil
 }
 
+func (c Client) StopInstance(ctx context.Context, in Instance) error {
+	// get instance that matches project tags and the name
+	instance, err := c.DescribeInstanceById(ctx, in.Id)
+	if err != nil {
+		return err
+	}
+
+	if _, err := c.ec2Svc.StopInstances(ctx, &ec2.StopInstancesInput{InstanceIds: []string{instance.Id}}); err != nil {
+		return errs.FromAwsApi(err, "ec2 stop-instance")
+	}
+	c.logger.InfoContext(ctx, fmt.Sprintf("stopping instance %s", instance.Id))
+	return nil
+}
+
+func (c Client) StartInstance(ctx context.Context, in Instance) error {
+	// get instance that matches project tags and the name
+	instance, err := c.DescribeInstanceById(ctx, in.Id)
+	if err != nil {
+		return err
+	}
+
+	if _, err := c.ec2Svc.StartInstances(ctx, &ec2.StartInstancesInput{InstanceIds: []string{instance.Id}}); err != nil {
+		return errs.FromAwsApi(err, "ec2 start-instance")
+	}
+	c.logger.InfoContext(ctx, fmt.Sprintf("starting instance %s", instance.Id))
+	return nil
+}
+
 func (c Client) RunInstance(ctx context.Context, v RunInstancesInput) (Instance, error) {
 	// first check if there is instance with the same tags
 	filters := append(v.Metadata.toTagFilter(), types.Filter{Name: aws.String("instance-state-name"), Values: []string{"running"}})
@@ -186,13 +214,17 @@ func (c Client) DescribeInstanceById(ctx context.Context, id string) (Instance, 
 	return instances[0], nil
 }
 
-func (c Client) DescribeInstancesByNamePrefix(ctx context.Context, prefix string, tags map[string]string) (Instances, error) {
+func (c Client) DescribeInstancesByNamePrefix(ctx context.Context, prefix string, tags map[string]string, instanceState string) (Instances, error) {
 	if _, ok := tags["Name"]; ok {
 		delete(tags, "Name")
 	}
-	filters := []types.Filter{{Name: aws.String("instance-state-name"), Values: []string{"running"}}}
+
+	var filters []types.Filter
 	for k, v := range tags {
 		filters = append(filters, types.Filter{Name: aws.String(fmt.Sprintf("tag:%s", k)), Values: []string{v}})
+	}
+	if instanceState != "" {
+		filters = append(filters, types.Filter{Name: aws.String("instance-state-name"), Values: []string{instanceState}})
 	}
 
 	instances, err := c.describeInstances(ctx, filters)

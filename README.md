@@ -50,6 +50,8 @@ If you have more than one AWS account, you can use different profile by prefixin
   - select "upload file" and select file `<region>-aws-vpn-<name>.ovpn` from home directory
   - connect
 - delete VPN `aws-vpn delete` (same as with other commands, region can be provided via `--region` flag)
+
+You can also stop/start VPN to save money by using `stop/start` command.
  
 ## releases
 

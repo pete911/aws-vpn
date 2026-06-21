@@ -31,8 +31,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 	logger := NewLogger()
 	client := NewClient(logger)
-	instance := SelectInstance(cmd.Context(), client, name)
-	if !prompt.Prompt(fmt.Sprintf("delete %s VPN instance in %s region", instance, client.Region)) {
+	instance := SelectInstance(cmd.Context(), client, name, "")
+	if !prompt.Prompt(fmt.Sprintf("delete %s %s VPN instance in %s region", instance.State, instance.Name, client.Region)) {
 		return
 	}
 

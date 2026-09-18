@@ -63,7 +63,7 @@ func NewClient(logger *slog.Logger) vpn.Client {
 }
 
 // SelectInstance either verifies if supplied instance name exists, or prompts user to select instance if argument is empty
-func SelectInstance(ctx context.Context, client vpn.Client, instanceName string, instanceState string) aws.Instance {
+func SelectInstance(ctx context.Context, client vpn.Client, instanceName string, instanceState string, excludeTerminated bool) aws.Instance {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
 
@@ -71,6 +71,16 @@ func SelectInstance(ctx context.Context, client vpn.Client, instanceName string,
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
+	}
+
+	if excludeTerminated {
+		var filtered aws.Instances
+		for _, i := range instances {
+			if i.State != "terminated" {
+				filtered = append(filtered, i)
+			}
+		}
+		instances = filtered
 	}
 
 	if !strings.HasPrefix(instanceName, vpn.NamePrefix) {

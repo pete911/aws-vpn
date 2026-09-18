@@ -181,7 +181,7 @@ func (c Client) RunInstance(ctx context.Context, v RunInstancesInput) (Instance,
 			Name: aws.String(v.Metadata.Name),
 		},
 		ImageId:          aws.String(ssmImageId),
-		InstanceType:     types.InstanceTypeT3aNano,
+		InstanceType:     types.InstanceTypeT3aMicro,
 		SecurityGroupIds: []string{securityGroupId},
 		SubnetId:         aws.String(v.SubnetId),
 		TagSpecifications: []types.TagSpecification{

@@ -31,7 +31,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	logger := NewLogger()
 	client := NewClient(logger)
-	instance := SelectInstance(cmd.Context(), client, name, "stopped")
+	instance := SelectInstance(cmd.Context(), client, name, "stopped", false)
 	if !prompt.Prompt(fmt.Sprintf("start %s VPN instance in %s region", instance.Name, client.Region)) {
 		return
 	}
